@@ -1,0 +1,916 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Audio book</title>
+
+<style>
+:root {
+  --bg:#000000;
+  --panel:#0d0d0d;
+  --card:#1c1c1c;
+  --text:#fff;
+  --muted:#c8c8c8;
+  --accent:#e6e6e6;
+  --on-accent:#000;
+  --border:#333333;
+}
+* { box-sizing:border-box; }
+html { font-size:16px; }
+body {
+  margin:0;
+  font-family:Arial,sans-serif;
+  font-size:1rem;
+  line-height:1.6;
+  background:var(--bg);
+  color:var(--text);
+}
+body[data-theme="dark"] {
+  --bg:#000000; --panel:#0d0d0d; --card:#1c1c1c;
+  --text:#fff; --muted:#c8c8c8; --accent:#e6e6e6;
+  --on-accent:#000;
+  --border:#333333;
+}
+body[data-theme="white"] {
+  --bg:#f5f5f5; --panel:#fff; --card:#eee;
+  --text:#111; --muted:#444; --accent:#111111;
+  --on-accent:#fff;
+  --border:#d0d0d0;
+}
+body[data-theme="brown"] {
+  --bg:#e9ddc9; --panel:#f6ecdc; --card:#e3d0b4;
+  --text:#111; --muted:#463727; --accent:#81552c;
+  --on-accent:#fff;
+  --border:#c5ad8d;
+}
+button,a { font:inherit; }
+button { cursor:pointer; }
+
+header {
+  min-height:66px;
+  padding:8px 2.5%;
+  background:var(--panel);
+  border-bottom:1px solid var(--border);
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+}
+.logo {
+  color:var(--accent);
+  font-size:1.65rem;
+  font-weight:bold;
+}
+.header-actions { display:flex; align-items:center; gap:10px; }
+.settings-wrap { position:relative; }
+.settings-button {
+  width:44px; height:44px;
+  background:var(--card);
+  color:var(--text);
+  border:1px solid var(--border);
+  border-radius:11px;
+  font-size:23px;
+}
+.auth-button {
+  height:44px;
+  padding:0 14px;
+  background:var(--card);
+  color:var(--text);
+  border:1px solid var(--border);
+  border-radius:11px;
+  white-space:nowrap;
+}
+.auth-button[hidden] { display:none; }
+.settings-menu {
+  position:absolute;
+  top:52px; right:0;
+  width:250px;
+  padding:7px;
+  background:var(--panel);
+  border:1px solid var(--border);
+  border-radius:12px;
+  display:none;
+  z-index:100;
+  box-shadow:0 10px 28px #0004;
+}
+.settings-menu.open { display:block; }
+.settings-item {
+  display:block;
+  width:100%;
+  padding:11px;
+  text-align:left;
+  color:var(--text);
+  background:transparent;
+  border:0;
+  border-radius:8px;
+}
+.settings-item:hover { background:var(--card); }
+
+.hero {
+  padding:34px 18px;
+  text-align:center;
+  background:linear-gradient(135deg,var(--panel),var(--bg));
+}
+.hero h1 {
+  max-width:950px;
+  margin:0 auto;
+  font-size:1.7rem;
+  line-height:1.4;
+}
+main { max-width:1100px; margin:25px auto 45px; padding:0 18px; }
+.section { display:none; }
+.section.active { display:block; }
+.section-heading { margin:0 0 20px; color:var(--accent); font-size:1.6rem; }
+
+.cards {
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  align-items:stretch;
+  gap:16px;
+}
+.card {
+  min-width:0;
+  display:flex;
+  flex-direction:column;
+  padding:19px;
+  background:var(--panel);
+  border:1px solid var(--border);
+  border-radius:14px;
+}
+.cover {
+  height:138px;
+  flex-shrink:0;
+  margin-bottom:16px;
+  border-radius:11px;
+  background:linear-gradient(135deg,var(--accent),var(--card));
+  overflow:hidden;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.cover img {
+  display:block;
+  width:100%;
+  height:100%;
+  object-fit:contain;
+  padding:5px;
+}
+.card h3 { margin:0 0 16px; }
+.card .action-button { align-self:flex-start; margin-top:auto; }
+
+.action-button {
+  display:inline-flex;
+  justify-content:center;
+  align-items:center;
+  padding:10px 14px;
+  background:var(--accent);
+  color:#000;
+  border:1px solid transparent;
+  border-radius:9px;
+  text-decoration:none;
+  white-space:nowrap;
+}
+.action-button:hover { opacity:.85; }
+.secondary {
+  background:var(--card);
+  color:var(--text);
+  border-color:var(--border);
+}
+
+.settings-panel { display:none; }
+.settings-panel.open { display:block; }
+.settings-panel .card { max-width:700px; }
+.choice-row { display:flex; flex-wrap:wrap; gap:10px; margin:16px 0; }
+.choice {
+  padding:10px 14px;
+  color:var(--text);
+  background:var(--card);
+  border:2px solid var(--border);
+  border-radius:9px;
+}
+.choice.selected { border-color:var(--accent); }
+.swatch {
+  display:inline-block;
+  width:14px; height:14px;
+  margin-right:5px;
+  border:1px solid #888;
+  border-radius:50%;
+  vertical-align:middle;
+}
+.email { color:var(--accent); font-weight:bold; overflow-wrap:anywhere; }
+.reader[hidden] { display:none; }
+.reader iframe {
+  width:100%; height:75vh; min-height:350px;
+  margin-top:15px; background:#fff;
+  border:1px solid var(--border); border-radius:9px;
+}
+footer {
+  padding:22px 15px;
+  text-align:center;
+  color:var(--muted);
+  background:var(--panel);
+  border-top:1px solid var(--border);
+}
+
+/* Profil */
+.profile-photo-row { display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin:14px 0; }
+.profile-avatar {
+  width:84px; height:84px;
+  flex-shrink:0;
+  border-radius:50%;
+  background:var(--card);
+  border:1px solid var(--border);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:34px;
+  overflow:hidden;
+}
+.profile-avatar img { width:100%; height:100%; object-fit:cover; }
+.profile-note { margin:12px 0 0; color:var(--muted); font-size:.88rem; }
+.profile-status { min-height:1.4em; margin:10px 0 0; }
+
+/* Ro'yxatdan o'tish / kirish oynasi */
+.auth-overlay {
+  position:fixed;
+  inset:0;
+  z-index:1000;
+  padding:16px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:rgba(0,0,0,.85);
+  overflow-y:auto;
+}
+.auth-overlay[hidden] { display:none; }
+.auth-box {
+  position:relative;
+  width:100%;
+  max-width:400px;
+}
+.auth-box h2 { margin:0 0 6px; color:var(--accent); }
+.auth-box p.sub { margin:0 0 14px; color:var(--muted); }
+.auth-close {
+  position:absolute;
+  top:10px; right:10px;
+  width:34px; height:34px;
+  color:var(--text);
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:9px;
+}
+.auth-close[hidden] { display:none; }
+.auth-tabs { display:flex; gap:8px; margin:10px 0 14px; }
+.auth-tabs .choice { flex:1; padding:9px 10px; }
+.auth-input {
+  width:100%;
+  margin-bottom:10px;
+  padding:11px 12px;
+  color:var(--text);
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:9px;
+  font:inherit;
+}
+.auth-input[hidden] { display:none; }
+.auth-input:focus { outline:2px solid var(--accent); }
+.auth-error { min-height:1.4em; margin:0 0 10px; color:#ff6b6b; font-size:.92rem; }
+.auth-box .action-button { width:100%; margin-bottom:10px; }
+.auth-link {
+  align-self:center;
+  color:var(--muted);
+  background:none;
+  border:0;
+  text-decoration:underline;
+}
+
+@media(max-width:850px) {
+  .cards { grid-template-columns:repeat(2,minmax(0,1fr)); }
+}
+@media(max-width:480px) {
+  header { padding:8px 13px; }
+  .logo { font-size:1.35rem; }
+  .header-actions { gap:7px; }
+  .settings-button { width:40px; height:40px; }
+  .auth-button { height:40px; padding:0 10px; }
+  .hero { padding:25px 15px; }
+  .hero h1 { font-size:1.35rem; }
+  main { padding:0 12px; }
+  .cards { grid-template-columns:1fr; }
+  .cover { height:180px; }
+  .card { padding:16px; }
+}
+</style>
+</head>
+
+<body data-theme="dark">
+
+<header>
+  <div class="logo">🎧 Audio book</div>
+
+  <div class="header-actions">
+    <button class="auth-button" id="authBtn" hidden>🔑 Kirish</button>
+
+    <div class="settings-wrap">
+      <button class="settings-button" id="menuToggle"
+        aria-label="Asosiy menyu" aria-expanded="false">☰</button>
+      <div class="settings-menu" id="mainMenu">
+        <button class="settings-item" data-section="home">🏠 Bosh sahifa</button>
+        <button class="settings-item" data-section="religious">🕌 Diniy audiokitoblar</button>
+        <button class="settings-item" data-section="guides">📘 O‘quv qo‘llanmalari</button>
+        <button class="settings-item" data-section="audio">🎧 Audiokitoblar</button>
+        <button class="settings-item" data-section="books">📚 Kitoblar</button>
+      </div>
+    </div>
+
+    <button class="settings-button" id="profileToggle" data-panel="profile"
+      aria-label="Profil">👤</button>
+
+    <div class="settings-wrap">
+      <button class="settings-button" id="settingsToggle"
+        aria-label="Sozlamalar" aria-expanded="false">⚙️</button>
+      <div class="settings-menu" id="settingsMenu">
+        <button class="settings-item" data-panel="suggestions">✉️ Takliflar</button>
+        <button class="settings-item" data-panel="background">🎨 Fon sozlamalari</button>
+        <button class="settings-item" data-panel="font">🔤 Shrift sozlamasi</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<section class="hero" id="hero">
+  <h1>Kitoblarni o‘qing, audiokitoblar bilan tanishing va yangi bilimlar oling.</h1>
+</section>
+
+<main>
+  <section class="section active" id="home">
+    <h2 class="section-heading">📚 Bizning kutubxonamiz</h2>
+
+    <div class="cards">
+      <article class="card">
+        <div class="cover">
+          <img src="images/diniy.png" alt="Diniy audiokitoblar rasmi">
+        </div>
+        <h3>Diniy audiokitoblar</h3>
+        <button class="action-button" data-go="religious">Bo‘limni ochish</button>
+      </article>
+
+      <article class="card">
+        <div class="cover">
+          <img src="images/oquv-qollanma.png" alt="O‘quv qo‘llanmalari rasmi">
+        </div>
+        <h3>O‘quv qo‘llanmalari</h3>
+        <button class="action-button" data-go="guides">Bo‘limni ochish</button>
+      </article>
+
+      <article class="card">
+        <div class="cover">
+          <img src="images/audiokitoblar.png" alt="Audiokitoblar rasmi">
+        </div>
+        <h3>Audiokitoblar</h3>
+        <button class="action-button" data-go="audio">Bo‘limni ochish</button>
+      </article>
+
+      <article class="card">
+        <div class="cover">
+          <img src="images/kitoblar.png" alt="Kitoblar rasmi">
+        </div>
+        <h3>Kitoblar</h3>
+        <button class="action-button" data-go="books">Kitoblarni ochish</button>
+      </article>
+    </div>
+  </section>
+
+  <section class="section" id="religious">
+    <h2 class="section-heading">🕌 Diniy audiokitoblar</h2>
+    <div class="card">Hozircha bu bo‘limga audio joylashtirilmagan.</div>
+  </section>
+
+  <section class="section" id="guides">
+    <h2 class="section-heading">📘 O‘quv qo‘llanmalari</h2>
+    <div class="card">Hozircha bu bo‘limga qo‘llanmalar joylashtirilmagan.</div>
+  </section>
+
+  <section class="section" id="audio">
+    <h2 class="section-heading">🎧 Audiokitoblar</h2>
+    <div class="card">Hozircha bu bo‘limga audiokitoblar joylashtirilmagan.</div>
+  </section>
+
+  <section class="section" id="books">
+    <h2 class="section-heading">📚 Kitoblar</h2>
+    <article class="card">
+      <h3>📘 Fizika</h3>
+      <div class="choice-row">
+        <button class="action-button" id="openPhysics">📖 O‘qish</button>
+        <a class="action-button secondary" href="books/fizika.pdf" download="Fizika.pdf">⬇️ Yuklab olish</a>
+      </div>
+      <div class="reader" id="physicsReader" hidden>
+        <h3>📖 Fizika kitobi</h3>
+        <iframe id="physicsFrame" title="Fizika PDF kitobi" src="about:blank"></iframe>
+        <p>Yuklab olinadigan PDF faylining asl nusxasi o‘zgarmaydi.</p>
+      </div>
+    </article>
+  </section>
+
+  <section class="settings-panel" id="panel-profile">
+    <div class="card">
+      <h2>👤 Profil</h2>
+      <p>Barcha maydonlar ixtiyoriy.</p>
+
+      <div class="profile-photo-row">
+        <div class="profile-avatar" id="profileAvatar">👤</div>
+        <div class="choice-row" style="margin:0">
+          <label class="action-button secondary" for="pPhoto">📷 Rasm tanlash</label>
+          <button class="action-button secondary" id="removePhoto" type="button">🗑 Olib tashlash</button>
+        </div>
+        <input type="file" id="pPhoto" accept="image/*" hidden>
+      </div>
+
+      <input class="auth-input" id="pLast" type="text" placeholder="Familiya" aria-label="Familiya" autocomplete="family-name">
+      <input class="auth-input" id="pFirst" type="text" placeholder="Ism" aria-label="Ism" autocomplete="given-name">
+      <input class="auth-input" id="pMiddle" type="text" placeholder="Sharif" aria-label="Sharif">
+      <input class="auth-input" id="pPhone" type="tel" placeholder="Telefon raqami" aria-label="Telefon raqami" autocomplete="tel">
+      <input class="auth-input" id="pCountry" type="text" placeholder="Davlat" aria-label="Davlat" autocomplete="country-name">
+      <input class="auth-input" id="pNation" type="text" placeholder="Millat" aria-label="Millat">
+      <input class="auth-input" id="pCity" type="text" placeholder="Yashash shahri" aria-label="Yashash shahri" autocomplete="address-level2">
+
+      <button class="action-button" id="saveProfile" type="button">💾 Saqlash</button>
+      <p class="profile-status" id="profileStatus" role="status"></p>
+      <p class="profile-note">Ma’lumotlaringiz qurilmangizda saqlanadi va sayt egasiga yuboriladi.</p>
+    </div>
+  </section>
+
+  <section class="settings-panel" id="panel-suggestions">
+    <div class="card">
+      <h2>✉️ Takliflar</h2>
+      <p>Taklif va shikoyatlaringiz bo‘lsa shu emailga xabar yuboring.</p>
+      <p><a class="email" href="mailto:x08ibrohim@gmail.com">x08ibrohim@gmail.com</a></p>
+      <a class="action-button" href="mailto:x08ibrohim@gmail.com?subject=Audio%20book%20taklif">✉️ Email orqali yozish</a>
+    </div>
+  </section>
+
+  <section class="settings-panel" id="panel-background">
+    <div class="card">
+      <h2>🎨 Fon sozlamalari</h2>
+      <p>Sayt fonini tanlang.</p>
+      <div class="choice-row">
+        <button class="choice" data-theme-choice="white"><span class="swatch" style="background:white"></span> Oq</button>
+        <button class="choice" data-theme-choice="dark"><span class="swatch" style="background:#000000"></span> Qora</button>
+        <button class="choice" data-theme-choice="brown"><span class="swatch" style="background:#e9ddc9"></span> Och jigarrang</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="settings-panel" id="panel-font">
+    <div class="card">
+      <h2>🔤 Shrift sozlamasi</h2>
+      <p>Faqat yozuv o‘lchami o‘zgaradi, shrift turi o‘zgarmaydi.</p>
+      <div class="choice-row">
+        <button class="action-button secondary" id="decreaseFont">A− Kichraytirish</button>
+        <button class="action-button secondary" id="resetFont">A Standart</button>
+        <button class="action-button" id="increaseFont">A+ Kattalashtirish</button>
+      </div>
+      <p>Joriy o‘lcham: <strong id="fontSizeLabel">16</strong> px</p>
+    </div>
+  </section>
+</main>
+
+<footer>© 2026 Audio book — O‘qing, o‘rganing va rivojlaning!</footer>
+
+<!-- Ro'yxatdan o'tish / kirish oynasi -->
+<div class="auth-overlay" id="authOverlay" hidden>
+  <div class="card auth-box">
+    <button class="auth-close" id="authClose" aria-label="Yopish">✖</button>
+    <h2>🎧 Audio book</h2>
+    <p class="sub" id="authSub">Hisobingizga kiring.</p>
+
+    <div class="auth-tabs">
+      <button class="choice selected" id="tabLogin" type="button">Kirish</button>
+      <button class="choice" id="tabRegister" type="button">Ro‘yxatdan o‘tish</button>
+    </div>
+
+    <input class="auth-input" id="authName" type="text" placeholder="Ismingiz" autocomplete="name" hidden>
+    <input class="auth-input" id="authEmail" type="email" placeholder="Email" autocomplete="email">
+    <input class="auth-input" id="authPassword" type="password" placeholder="Parol (kamida 6 ta belgi)" autocomplete="current-password">
+
+    <p class="auth-error" id="authError" role="alert"></p>
+
+    <button class="action-button" id="authSubmit" type="button">Kirish</button>
+    <button class="action-button secondary" id="googleBtn" type="button">🔑 Google orqali davom etish</button>
+    <button class="auth-link" id="resetBtn" type="button">Parolni unutdingizmi?</button>
+  </div>
+</div>
+
+<script>
+const body = document.body;
+const mainMenu = document.getElementById("mainMenu");
+const settingsMenu = document.getElementById("settingsMenu");
+const menuToggle = document.getElementById("menuToggle");
+const settingsToggle = document.getElementById("settingsToggle");
+
+function savePreference(key, value) {
+  try { localStorage.setItem(key, value); } catch (e) {}
+}
+function loadPreference(key, fallback) {
+  try { return localStorage.getItem(key) || fallback; }
+  catch (e) { return fallback; }
+}
+function closeMenus() {
+  mainMenu.classList.remove("open");
+  settingsMenu.classList.remove("open");
+  menuToggle.setAttribute("aria-expanded", "false");
+  settingsToggle.setAttribute("aria-expanded", "false");
+}
+
+const savedTheme = loadPreference("ab-theme", "dark");
+body.dataset.theme = ["dark", "white", "brown"].includes(savedTheme) ? savedTheme : "dark";
+
+let fontSize = Number(loadPreference("ab-font-size", "16"));
+if (!Number.isFinite(fontSize)) fontSize = 16;
+fontSize = Math.max(12, Math.min(24, fontSize));
+
+function applyFontSize() {
+  document.documentElement.style.fontSize = fontSize + "px";
+  document.getElementById("fontSizeLabel").textContent = fontSize;
+  savePreference("ab-font-size", String(fontSize));
+}
+applyFontSize();
+
+function showSection(id) {
+  document.querySelectorAll(".section").forEach(section => {
+    section.classList.toggle("active", section.id === id);
+  });
+  document.querySelectorAll(".settings-panel").forEach(panel => panel.classList.remove("open"));
+  document.getElementById("hero").style.display = id === "home" ? "block" : "none";
+  closeMenus();
+  window.scrollTo({ top:0, behavior:"smooth" });
+}
+
+menuToggle.addEventListener("click", event => {
+  event.stopPropagation();
+  const open = !mainMenu.classList.contains("open");
+  closeMenus();
+  mainMenu.classList.toggle("open", open);
+  menuToggle.setAttribute("aria-expanded", String(open));
+});
+
+settingsToggle.addEventListener("click", event => {
+  event.stopPropagation();
+  const open = !settingsMenu.classList.contains("open");
+  closeMenus();
+  settingsMenu.classList.toggle("open", open);
+  settingsToggle.setAttribute("aria-expanded", String(open));
+});
+
+mainMenu.querySelectorAll("[data-section]").forEach(button => {
+  button.addEventListener("click", () => showSection(button.dataset.section));
+});
+document.querySelectorAll("[data-go]").forEach(button => {
+  button.addEventListener("click", () => showSection(button.dataset.go));
+});
+
+document.querySelectorAll("[data-panel]").forEach(button => {
+  button.addEventListener("click", () => {
+    document.querySelectorAll(".section").forEach(section => section.classList.remove("active"));
+    document.querySelectorAll(".settings-panel").forEach(panel => panel.classList.remove("open"));
+    document.getElementById("panel-" + button.dataset.panel).classList.add("open");
+    document.getElementById("hero").style.display = "none";
+    closeMenus();
+    window.scrollTo({ top:0, behavior:"smooth" });
+  });
+});
+
+function updateThemeButtons() {
+  document.querySelectorAll("[data-theme-choice]").forEach(button => {
+    button.classList.toggle("selected", button.dataset.themeChoice === body.dataset.theme);
+  });
+}
+document.querySelectorAll("[data-theme-choice]").forEach(button => {
+  button.addEventListener("click", () => {
+    body.dataset.theme = button.dataset.themeChoice;
+    savePreference("ab-theme", body.dataset.theme);
+    updateThemeButtons();
+  });
+});
+updateThemeButtons();
+
+document.getElementById("decreaseFont").addEventListener("click", () => {
+  fontSize = Math.max(12, fontSize - 1);
+  applyFontSize();
+});
+document.getElementById("increaseFont").addEventListener("click", () => {
+  fontSize = Math.min(24, fontSize + 1);
+  applyFontSize();
+});
+document.getElementById("resetFont").addEventListener("click", () => {
+  fontSize = 16;
+  applyFontSize();
+});
+
+/* ===== Profil ===== */
+
+// web3forms.com dan olingan kalit
+const WEB3FORMS_KEY = "83e2f008-471a-41f5-be07-4227bf549144";
+
+const profileFields = {
+  pLast: "Familiya",
+  pFirst: "Ism",
+  pMiddle: "Sharif",
+  pPhone: "Telefon",
+  pCountry: "Davlat",
+  pNation: "Millat",
+  pCity: "Yashash shahri"
+};
+let profilePhoto = "";
+
+const profileKey = () => "ab-profile-" + (window.abUid || "guest");
+
+function renderPhoto() {
+  const box = document.getElementById("profileAvatar");
+  box.textContent = "";
+  if (profilePhoto) {
+    const img = document.createElement("img");
+    img.src = profilePhoto;
+    img.alt = "Profil rasmi";
+    box.appendChild(img);
+  } else {
+    box.textContent = "👤";
+  }
+}
+
+function loadProfile() {
+  let data = {};
+  try { data = JSON.parse(loadPreference(profileKey(), "{}")) || {}; } catch (e) {}
+  Object.keys(profileFields).forEach(id => {
+    document.getElementById(id).value = data[id] || "";
+  });
+  profilePhoto = data.photo || "";
+  renderPhoto();
+  document.getElementById("profileStatus").textContent = "";
+}
+
+document.getElementById("pPhoto").addEventListener("change", event => {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    const img = new Image();
+    img.onload = () => {
+      const max = 300;
+      const scale = Math.min(1, max / Math.max(img.width, img.height));
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.round(img.width * scale);
+      canvas.height = Math.round(img.height * scale);
+      canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+      profilePhoto = canvas.toDataURL("image/jpeg", 0.8);
+      renderPhoto();
+    };
+    img.src = reader.result;
+  };
+  reader.readAsDataURL(file);
+  event.target.value = "";
+});
+
+document.getElementById("removePhoto").addEventListener("click", () => {
+  profilePhoto = "";
+  renderPhoto();
+});
+
+function sendProfile(data) {
+  if (WEB3FORMS_KEY.startsWith("YOUR_")) return;
+  const payload = {
+    access_key: WEB3FORMS_KEY,
+    subject: "Audio book: yangi profil ma'lumotlari",
+    from_name: "Audio book",
+    "Hisob emaili": window.abEmail || "kirmagan",
+    "Rasm tanlangan": data.photo ? "ha" : "yo'q"
+  };
+  Object.keys(profileFields).forEach(id => {
+    payload[profileFields[id]] = data[id] || "-";
+  });
+  fetch("https://api.web3forms.com/submit", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "Accept": "application/json" },
+    body: JSON.stringify(payload)
+  }).catch(() => {});
+}
+
+document.getElementById("saveProfile").addEventListener("click", () => {
+  const data = { photo: profilePhoto };
+  Object.keys(profileFields).forEach(id => {
+    data[id] = document.getElementById(id).value.trim();
+  });
+  savePreference(profileKey(), JSON.stringify(data));
+  document.getElementById("profileStatus").textContent = "✅ Saqlandi";
+  sendProfile(data);
+});
+
+document.getElementById("profileToggle").addEventListener("click", loadProfile);
+window.addEventListener("ab-auth", loadProfile);
+loadProfile();
+
+const physicsReader = document.getElementById("physicsReader");
+const physicsFrame = document.getElementById("physicsFrame");
+const openPhysics = document.getElementById("openPhysics");
+
+openPhysics.addEventListener("click", () => {
+  if (physicsReader.hidden) {
+    physicsFrame.src = "books/fizika.pdf";
+    physicsReader.hidden = false;
+    openPhysics.textContent = "✖ Kitobni yopish";
+    physicsReader.scrollIntoView({ behavior:"smooth", block:"start" });
+  } else {
+    physicsReader.hidden = true;
+    physicsFrame.src = "about:blank";
+    openPhysics.textContent = "📖 O‘qish";
+  }
+});
+
+document.addEventListener("click", event => {
+  if (!event.target.closest(".header-actions")) closeMenus();
+});
+document.addEventListener("keydown", event => {
+  if (event.key === "Escape") closeMenus();
+});
+</script>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {
+  getAuth, onAuthStateChanged, createUserWithEmailAndPassword,
+  signInWithEmailAndPassword, signOut, updateProfile,
+  GoogleAuthProvider, signInWithPopup, sendPasswordResetEmail
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+/* ============ SOZLAMALAR ============ */
+
+// true  = saytga faqat ro'yxatdan o'tgan foydalanuvchilar kira oladi
+// false = sayt hamma uchun ochiq, "Kirish" tugmasi ixtiyoriy
+const REQUIRE_LOGIN = true;
+
+// Firebase konsolidan olingan ma'lumotlarni shu yerga qo'ying
+const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT.firebaseapp.com",
+  projectId: "YOUR_PROJECT",
+  appId: "YOUR_APP_ID"
+};
+
+/* ===================================== */
+
+const $ = id => document.getElementById(id);
+const overlay = $("authOverlay");
+const authBtn = $("authBtn");
+const authClose = $("authClose");
+const authName = $("authName");
+const authEmail = $("authEmail");
+const authPassword = $("authPassword");
+const authError = $("authError");
+const authSubmit = $("authSubmit");
+const authSub = $("authSub");
+const tabLogin = $("tabLogin");
+const tabRegister = $("tabRegister");
+
+const configured = !firebaseConfig.apiKey.startsWith("YOUR_");
+
+// Firebase sozlanmagan bo'lsa, sayt oddiy ochiq holatda ishlaydi
+if (configured) {
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  let mode = "login";
+  let currentUser = null;
+
+  const messages = {
+    "auth/invalid-email": "Email noto‘g‘ri yozilgan.",
+    "auth/missing-password": "Parolni kiriting.",
+    "auth/weak-password": "Parol juda oddiy. Kamida 6 ta belgi kiriting.",
+    "auth/email-already-in-use": "Bu email bilan allaqachon ro‘yxatdan o‘tilgan.",
+    "auth/invalid-credential": "Email yoki parol noto‘g‘ri.",
+    "auth/user-not-found": "Bunday foydalanuvchi topilmadi.",
+    "auth/wrong-password": "Parol noto‘g‘ri.",
+    "auth/too-many-requests": "Juda ko‘p urinish bo‘ldi. Birozdan keyin qayta urinib ko‘ring.",
+    "auth/network-request-failed": "Internet bilan aloqa yo‘q.",
+    "auth/popup-closed-by-user": "Google oynasi yopildi.",
+    "auth/cancelled-popup-request": "Google oynasi yopildi."
+  };
+  const showError = e => {
+    authError.textContent = messages[e.code] || "Xatolik yuz berdi. Qayta urinib ko‘ring.";
+  };
+
+  function setMode(next) {
+    mode = next;
+    const isRegister = next === "register";
+    tabLogin.classList.toggle("selected", !isRegister);
+    tabRegister.classList.toggle("selected", isRegister);
+    authName.hidden = !isRegister;
+    authSubmit.textContent = isRegister ? "Ro‘yxatdan o‘tish" : "Kirish";
+    authSub.textContent = isRegister ? "Yangi hisob yarating." : "Hisobingizga kiring.";
+    authPassword.autocomplete = isRegister ? "new-password" : "current-password";
+    authError.textContent = "";
+  }
+
+  function openOverlay() {
+    overlay.hidden = false;
+    document.body.style.overflow = "hidden";
+  }
+  function closeOverlay() {
+    overlay.hidden = true;
+    document.body.style.overflow = "";
+    authError.textContent = "";
+  }
+
+  tabLogin.addEventListener("click", () => setMode("login"));
+  tabRegister.addEventListener("click", () => setMode("register"));
+  authClose.addEventListener("click", closeOverlay);
+
+  authSubmit.addEventListener("click", async () => {
+    authError.textContent = "";
+    const email = authEmail.value.trim();
+    const password = authPassword.value;
+    if (!email || !password) {
+      authError.textContent = "Email va parolni kiriting.";
+      return;
+    }
+    authSubmit.disabled = true;
+    try {
+      if (mode === "register") {
+        const cred = await createUserWithEmailAndPassword(auth, email, password);
+        const name = authName.value.trim();
+        if (name) await updateProfile(cred.user, { displayName: name });
+      } else {
+        await signInWithEmailAndPassword(auth, email, password);
+      }
+      authPassword.value = "";
+    } catch (e) {
+      showError(e);
+    } finally {
+      authSubmit.disabled = false;
+    }
+  });
+
+  $("googleBtn").addEventListener("click", async () => {
+    authError.textContent = "";
+    try {
+      await signInWithPopup(auth, new GoogleAuthProvider());
+    } catch (e) {
+      showError(e);
+    }
+  });
+
+  $("resetBtn").addEventListener("click", async () => {
+    const email = authEmail.value.trim();
+    if (!email) {
+      authError.textContent = "Avval email manzilingizni yozing.";
+      return;
+    }
+    try {
+      await sendPasswordResetEmail(auth, email);
+      authError.style.color = "inherit";
+      authError.textContent = "Parolni tiklash xati emailingizga yuborildi.";
+      setTimeout(() => { authError.style.color = ""; }, 4000);
+    } catch (e) {
+      showError(e);
+    }
+  });
+
+  [authEmail, authPassword, authName].forEach(input => {
+    input.addEventListener("keydown", e => {
+      if (e.key === "Enter") authSubmit.click();
+    });
+  });
+
+  authBtn.hidden = false;
+  authBtn.addEventListener("click", async () => {
+    if (currentUser) {
+      await signOut(auth);
+    } else {
+      openOverlay();
+    }
+  });
+
+  onAuthStateChanged(auth, user => {
+    currentUser = user;
+    window.abUid = user ? user.uid : null;
+    window.abEmail = user ? user.email : null;
+    window.dispatchEvent(new Event("ab-auth"));
+    if (user) {
+      authBtn.textContent = "🚪 Chiqish";
+      authBtn.title = user.displayName || user.email || "";
+      closeOverlay();
+    } else {
+      authBtn.textContent = "🔑 Kirish";
+      authBtn.title = "";
+      if (REQUIRE_LOGIN) {
+        authClose.hidden = true;
+        openOverlay();
+      } else {
+        authClose.hidden = false;
+      }
+    }
+  });
+}
+</script>
+
+</body>
+</html>
